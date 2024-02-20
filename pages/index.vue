@@ -1,5 +1,25 @@
 <template>
     <div class="flex flex-col items-center justify-center min-h-screen">
+      <div v-if="questionsTree.length > 0">
+      <!-- Recursively render the questions tree -->
+      <ul>
+        <li v-for="question in questionsTree" :key="question.id">
+          {{ question.content }}
+          <ul v-if="question.answers.length">
+            <li v-for="answer in question.answers" :key="answer.id">
+              Answer: {{ answer.content }}
+            </li>
+          </ul>
+          <!-- Recursive call for nested questions, wrap in a template if necessary -->
+          <template v-if="question.children.length">
+            <li v-for="childQuestion in question.children" :key="childQuestion.id">
+              <!-- The recursive rendering logic would be repeated here -->
+              <!-- You might consider creating a separate component for this if it gets too complex -->
+            </li>
+          </template>
+        </li>
+      </ul>
+      </div>
       <!-- Show the initial button to create the first question -->
       <div v-if="!showInput && !submittedQuestion">
         <UButton
@@ -43,13 +63,56 @@
   </template>
   
   <script setup lang="ts">
-  import { ref } from 'vue';
-  
-// Define a type for the question
-type Question = {
+  import { defineComponent, onMounted, ref } from 'vue';
+
+// Assuming you have types for Question and Answer
+interface Answer {
   id: number;
   content: string;
-};
+  // Include any other properties
+}
+
+interface Question {
+  id: number;
+  content: string;
+  answers: Answer[];
+  children: Question[];
+  // Include any other properties
+}
+
+const questionsTree = ref<Question[]>([]);
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/api/questions/tree');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    questionsTree.value = await response.json();
+
+    // Automatically show input if there are no questions
+    showInput.value = questionsTree.value.length === 0;
+  } catch (error) {
+    console.error('Error fetching questions tree:', error);
+  }
+});
+
+// Recursive component for rendering questions and their children
+const QuestionsTree = defineComponent({
+  props: ['questions'],
+  template: `
+    <ul>
+      <li v-for="question in questions" :key="question.id">
+        {{ question.content }}
+        <ul v-if="question.answers.length">
+          <li v-for="answer in question.answers" :key="answer.id">
+            Answer: {{ answer.content }}
+          </ul>
+        </ul>
+        <!-- Recursive call for nested questions -->
+        <QuestionsTree v-if="question.children.length" :questions="question.children" />
+      </li>
+    </ul>
+  `,
+});
 
 // Use the Question type for the submittedQuestion ref
 const submittedQuestion = ref<Question | null>(null);
