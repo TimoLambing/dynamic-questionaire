@@ -1,27 +1,30 @@
 <template>
     <div class="flex flex-col items-center justify-center min-h-screen">
       <div v-if="questionsTree.length > 0">
-      <!-- Recursively render the questions tree -->
-      <ul>
-        <li v-for="question in questionsTree" :key="question.id">
-          {{ question.content }}
-          <ul v-if="question.answers.length">
-            <li v-for="answer in question.answers" :key="answer.id">
-              Answer: {{ answer.content }}
-            </li>
-          </ul>
-          <!-- Recursive call for nested questions, wrap in a template if necessary -->
-          <template v-if="question.children.length">
-            <li v-for="childQuestion in question.children" :key="childQuestion.id">
-              <!-- The recursive rendering logic would be repeated here -->
-              <!-- You might consider creating a separate component for this if it gets too complex -->
-            </li>
-          </template>
-        </li>
-      </ul>
+        <ul>
+          <li v-for="question in questionsTree" :key="question.id" class="m-2">
+            <!-- Directly editing within the list -->
+            <template v-if="editingQuestionId === question.id">
+              <UInput
+                color="primary"
+                variant="outline"
+                placeholder="Edit question..."
+                v-model="editInputValue"
+                class="text-white"
+              />
+              <UButton label="Saada" @click="handleSubmit" />
+              <UButton label="Cancel" @click="cancelEdit" />
+            </template>
+            <template v-else>
+              <span class="mr-4">( {{ question.id }} ) : {{ question.content }}</span>
+              <UButton label="Edit" @click="prepareEditQuestion(question)" />
+            </template>
+            <!-- Nested questions and answers -->
+          </li>
+        </ul>
       </div>
       <!-- Show the initial button to create the first question -->
-      <div v-if="!showInput && !submittedQuestion">
+      <div v-else v-if="!showInput && !submittedQuestion">
         <UButton
           icon="i-heroicons-pencil-square"
           size="sm"
@@ -81,19 +84,22 @@ interface Question {
 }
 
 const questionsTree = ref<Question[]>([]);
+  const editingQuestionId = ref<number | null>(null);
+const editInputValue = ref('');
 
-onMounted(async () => {
+// Abstract the fetch logic into a separate method
+const fetchQuestionsTree = async () => {
   try {
     const response = await fetch('/api/questions/tree');
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     questionsTree.value = await response.json();
-
-    // Automatically show input if there are no questions
     showInput.value = questionsTree.value.length === 0;
   } catch (error) {
     console.error('Error fetching questions tree:', error);
   }
-});
+};
+
+onMounted(fetchQuestionsTree);
 
 // Recursive component for rendering questions and their children
 const QuestionsTree = defineComponent({
@@ -128,41 +134,30 @@ const isEditing = ref(false);
   
   // Handle the submission of the input value
   const handleSubmit = async () => {
-    // Determine the API endpoint
-  const apiEndpoint = isEditing.value && submittedQuestion.value
-    ? `/api/questions/${submittedQuestion.value.id}`
-    : '/api/questions';
+  const contentToSubmit = editingQuestionId.value ? editInputValue.value : inputValue.value;
+  const apiEndpoint = editingQuestionId.value ? `/api/questions/${editingQuestionId.value}` : '/api/questions';
+
+  try {
+    const response = await fetch(apiEndpoint, {
+      method: editingQuestionId.value ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: contentToSubmit }),
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
-    try {
-      // Make a POST request to the server
-      const response = await fetch(apiEndpoint, {
-        method: isEditing.value ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: inputValue.value }),
-      });
-  
-      // Check if the request was successful
-      if (response.ok) {
-        // Parse the JSON response
-        const data = await response.json();
-        // Set the submitted question to the response data
-        submittedQuestion.value = data;
-        // Hide the input and show the submitted question with the edit button
-        showInput.value = false;
-        isEditing.value = false; // Reset editing state
-      } else {
-        // Handle HTTP errors
-        console.error('HTTP error:', response.status);
-        // Here you could set an error message in your state and display it in the template
-      }
-    } catch (error) {
-      // Handle exceptions
-      console.error('Fetch error:', error);
-      // Here you could set an error message in your state and display it in the template
-    }
-  };
+    await fetchQuestionsTree(); // Refresh the list after successful add/edit
+    
+    // Clear the form and reset the state
+    editingQuestionId.value = null;
+    inputValue.value = '';
+    editInputValue.value = '';
+    showInput.value = false;
+    isEditing.value = false;
+  } catch (error) {
+    console.error('Error submitting question:', error);
+  }
+};
   
   // Populate the input for editing and show it
   const editQuestion = () => {
@@ -171,6 +166,34 @@ const isEditing = ref(false);
     showInput.value = true;
     isEditing.value = true;
   }
+};
+
+// Prepares the selected question for editing
+const prepareEditQuestion = (question: Question) => {
+  editingQuestionId.value = question.id;
+  editInputValue.value = question.content; // Bind the existing content to editInputValue
+  showInput.value = true;
+  isEditing.value = true;
+};
+
+// Cancels the edit operation and resets the form
+const cancelEdit = () => {
+  editingQuestionId.value = null;
+  editInputValue.value = '';
+  showInput.value = false;
+  isEditing.value = false;
+};
+const startEdit = (question: Question) => {
+  editingQuestionId.value = question.id;
+  editInputValue.value = question.content;
+};
+
+const saveEdit = async () => {
+  if (editingQuestionId.value === null) return;
+  // Save logic here...
+  // After saving, reset editing state and refresh the questions tree
+  editingQuestionId.value = null;
+  await fetchQuestionsTree();
 };
 
   
