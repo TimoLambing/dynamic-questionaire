@@ -11,16 +11,25 @@
   },
   "dependencies": {
     "@nuxt/ui": "npm:@nuxt/ui-edge@latest",
-    "@prisma/client": "^5.9.1",
+    "@prisma/client": "^5.10.1",
     "@prisma/extension-accelerate": "^0.6.3",
     "nuxt": "^3.10.2",
-    "prisma": "^5.9.1",
     "vue": "^3.4.19",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@nuxtjs/eslint-module": "^4.1.0",
     "@nuxtjs/supabase": "^1.1.6",
     "@nuxtjs/tailwindcss": "^6.11.4",
-    "nuxt-icon": "^0.6.8"
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-vue": "^9.21.1",
+    "nuxt-icon": "^0.6.8",
+    "prettier": "^3.2.5",
+    "prisma": "^5.10.1",
+    "vue-eslint-parser": "^9.4.2"
   }
 }

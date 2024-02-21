@@ -22,4 +22,17 @@ export default defineEventHandler(async (event) => {
       return { error: 'An error occurred while updating the question.' };
     }
   }
+
+  if (req.method === 'DELETE') {
+    try {
+      await prisma.question.delete({
+        where: { id: Number(id) },
+      });
+      // Return some success response
+      return { success: true };
+    } catch (error) {
+      res.statusCode = 500;
+      return { error: 'An error occurred while deleting the question.' };
+    }
+  }
 });
