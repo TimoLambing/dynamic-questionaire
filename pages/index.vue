@@ -68,18 +68,43 @@
                 :key="answer.id"
                 class="flex flex-row border rounded-xl m-2 p-2"
               >
-                <span class="mr-4">( {{ answer.id }} ) : {{ answer.content }}</span>
-                <!-- Edit and Delete buttons for answers -->
-                <UButton
-                  label="Muuda"
-                  class="ml-2"
-                  @click="startEditAnswer(answer)"
-                />
-                <UButton
-                  label="Kustuta"
-                  class="ml-2"
-                  @click="deleteAnswer(answer.id)"
-                />
+                <div
+                  v-if="editingAnswerId === answer.id"
+                  class="flex flex-row items-center"
+                >
+                  <UInput
+                    v-model="editAnswerInputValue"
+                    color="primary"
+                    variant="outline"
+                    placeholder="Muuda vastust..."
+                    class="text-white mr-4"
+                  />
+                  <UButton
+                    label="Salvesta"
+                    class="mr-2"
+                    @click="saveEditAnswer(answer)"
+                  />
+                  <UButton
+                    label="Tühista"
+                    @click="cancelEditAnswer"
+                  />
+                </div>
+                <div
+                  v-else
+                  class="flex flex-row items-center"
+                >
+                  <span class="mr-4">( {{ answer.id }} ) : {{ answer.content }}</span>
+                  <UButton
+                    label="Muuda"
+                    class="ml-2"
+                    @click="startEditAnswer(answer)"
+                  />
+                  <UButton
+                    label="Kustuta"
+                    class="ml-2"
+                    @click="deleteAnswer(answer.id)"
+                  />
+                </div>
               </li>
             </ul>
           </div>
@@ -88,14 +113,17 @@
             v-if="addingAnswerToQuestionId === question.id"
             class="flex flex-col"
           >
-            <div class="flex flex-row">
+            <div class="flex flex-row border rounded-xl m-2 p-2">
               <UInput
                 v-model="newAnswerContent"
+                color="primary"
+                variant="outline"
                 placeholder="Sisesta vastus..."
                 class="text-white mr-4"
               />
               <UButton
                 label="Saada"
+                class="mr-2"
                 @click="submitAnswer(addingAnswerToQuestionId, newAnswerContent)"
               />
               <UButton
@@ -180,8 +208,10 @@ const submittedQuestion = ref<Question | null>(null);
 const showInput = ref(false);
 const inputValue = ref('');
 const isEditing = ref(false);
-const addingAnswerToQuestionId = ref(null);
+const addingAnswerToQuestionId = ref<number | null>(null);
 const newAnswerContent = ref('');
+const editingAnswerId = ref<number | null>(null);
+const editAnswerInputValue = ref('');
 
 // Adjust fetchQuestionsTree to correctly set showInput only for adding new questions
 const fetchQuestionsTree = async () => {
@@ -280,6 +310,20 @@ const deleteQuestion = async (questionId) => {
   }
 };
 
+// Add this inside your <script setup>
+const deleteAnswer = async (answerId) => {
+  try {
+    const response = await fetch(`/api/answers/${answerId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    // Optionally, refresh the questions tree or handle the UI update directly
+    fetchQuestionsTree();
+  } catch (error) {
+    console.error('Error deleting answer:', error);
+  }
+};
+
 // When preparing to edit a question:
 const prepareEditQuestion = (question: Question) => {
   editingQuestionId.value = question.id;
@@ -300,6 +344,35 @@ const prepareAddAnswer = (questionId) => {
   addingAnswerToQuestionId.value = questionId;
   // Reset any existing content
   newAnswerContent.value = '';
+};
+
+const startEditAnswer = (answer: Answer) => {
+  editingAnswerId.value = answer.id;
+  editAnswerInputValue.value = answer.content; // Preset the current answer content for editing
+};
+
+// Function to save the edited answer
+const saveEditAnswer = async () => {
+  if (!editingAnswerId.value) return;
+  try {
+    const response = await fetch(`/api/answers/${editingAnswerId.value}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editAnswerInputValue.value }),
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    editingAnswerId.value = null; // Reset editing state
+    editAnswerInputValue.value = ''; // Clear edit input
+    await fetchQuestionsTree(); // Refresh the list to show updated answer
+  } catch (error) {
+    console.error('Error saving edited answer:', error);
+  }
+};
+
+// Function to cancel answer editing
+const cancelEditAnswer = () => {
+  editingAnswerId.value = null;
+  editAnswerInputValue.value = '';
 };
 
 const startEdit = (question: Question) => {
