@@ -11,13 +11,38 @@ html {
     width: 100vw;
     box-sizing: border-box;
     margin: 0;
-    overflow-x: hidden; /* hide horizontal overflow */
-    overflow-y: auto;
+    overflow: auto; /* Allow scroll on overflow */
+    background-color: black;
   }
 
 body {
-    background-color: black;
     color: white;
-    height: 100vh;
-    width: 100vw;
+}
+
+.text-white input {
+  color: white !important; /* Ensures input text is white */
+}
+
+.badge {
+  display: inline-block;
+  width: 26px; /* You can adjust the size as needed */
+  height: 26px;
+  line-height: 26px; /* Aligns text in the center vertically */
+  text-align: center;
+  border-radius: 50%; /* Makes the badge circular */
+  color: #000; /* Black text color */
+  font-weight: bold;
+  font-size: 0.75rem; /* Adjust size as needed */
+  margin: 2px;
+}
+
+.level-badge {
+  background-color: rgb(187, 101, 202); /* Yellow background for level */
+  margin: 1px;
+}
+
+.id-badge {
+  background-color: rgb(67, 150, 185); /* Blue background for ID */
+  color: #fff; /* White text color for better contrast */
+  margin: 2px;
 }

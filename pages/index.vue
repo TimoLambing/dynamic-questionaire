@@ -16,7 +16,7 @@
             v-if="editingQuestionId === question.id"
             class="flex flex-col border rounded-xl p-2"
           >
-            <div class="flex flex-row">
+            <!--<div class="flex flex-row">
               <UInput
                 v-model="editInputValue"
                 color="primary"
@@ -33,16 +33,16 @@
                 label="Tühista"
                 @click="cancelEdit"
               />
-              <!-- "Kustuta" button display condition adjusted to also check for no answers -->
+              "Kustuta" button display condition adjusted to also check for no answers
               <UButton
                 v-if="question.children.length === 0 && question.answers.length === 0"
                 label="Kustuta"
                 class="ml-2"
                 @click="deleteQuestion(question.id)"
               />
-            </div>
+            </div> -->
           </div>
-          <div
+          <!--  <div
             v-else
             class="border rounded-xl p-2 flex flex-col"
           >
@@ -52,14 +52,14 @@
                 label="Muuda"
                 @click="prepareEditQuestion(question)"
               />
-              <!-- In the list displaying questions -->
+              In the list displaying questions
               <UButton
                 label="Lisa vastus"
                 class="ml-2"
                 @click="prepareAddAnswer(question.id)"
               />
             </div>
-          </div>
+          </div> -->
           <div>
             <!-- Display answers -->
             <ul v-if="question.answers.length">
@@ -104,6 +104,48 @@
                     class="ml-2"
                     @click="deleteAnswer(answer.id)"
                   />
+                  <UButton
+                    label="Lisa küsimus"
+                    class="ml-2"
+                    @click="prepareAddnextQuestion(answer.id)"
+                  />
+                  <!-- Check if there is a nested question related to this answer -->
+                  <div v-if="answer.nextQuestion && editingnextQuestionId !== answer.nextQuestion.id">
+                    <!-- Display the nested question content -->
+                    <div>{{ answer.nextQuestion.content }}</div>
+                    <!-- Button to edit the nested question -->
+                    <UButton
+                      label="Muuda küsimust"
+                      class="ml-2"
+                      @click="prepareEditnextQuestion(answer.nextQuestion)"
+                    />
+                  </div>
+                  <!-- Editing state for a nested question -->
+                  <div
+                    v-else-if="editingnextQuestionId === answer.nextQuestion.id"
+                    class="flex flex-row items-center"
+                  >
+                    <UInput
+                      v-model="editnextQuestionInputValue"
+                      placeholder="Muuda küsimust..."
+                      class="mr-4"
+                    />
+                    <UButton
+                      label="Salvesta"
+                      @click="saveEditnextQuestion"
+                    />
+                    <UButton
+                      label="Tühista"
+                      @click="cancelEditnextQuestion"
+                    />
+                  </div>
+                  <!-- Button to add a new nested question if there isn't one already -->
+                  <UButton
+                    v-if="!answer.nextQuestion"
+                    label="Lisa küsimus"
+                    class="ml-2"
+                    @click="prepareAddnextQuestion(answer.id)"
+                  />
                 </div>
               </li>
             </ul>
@@ -135,7 +177,7 @@
         </li>
       </ul>
     </div>
-    <!-- Show the initial button to create the first question -->
+    <!-- Show the initial button to create the first question
     <div v-if="questionsTree.length === 0 && !editingQuestionId && !showInput">
       <UButton
         icon="i-heroicons-pencil-square"
@@ -147,7 +189,7 @@
         class="text-white"
         @click="() => { showInput = true; }"
       />
-    </div>
+    </div> -->
     <!-- Show input and submit button if not yet submitted -->
     <div
       v-if="showInput"
@@ -185,35 +227,24 @@
 
 <script setup lang="ts">
 import { defineComponent, onMounted, ref } from 'vue';
-
-// Assuming you have types for Question and Answer
-interface Answer {
-  id: number;
-  content: string;
-  // Include any other properties
-}
-
-interface Question {
-  id: number;
-  content: string;
-  answers: Answer[];
-  children: Question[];
-  // Include any other properties
-}
+/* import type { Question, Answer } from '~/types'; */
 
 const questionsTree = ref<Question[]>([]);
 const editingQuestionId = ref<number | null>(null);
 const editInputValue = ref('');
 const submittedQuestion = ref<Question | null>(null);
-const showInput = ref(false);
+/* const showInput = ref(false); */
 const inputValue = ref('');
 const isEditing = ref(false);
 const addingAnswerToQuestionId = ref<number | null>(null);
 const newAnswerContent = ref('');
 const editingAnswerId = ref<number | null>(null);
 const editAnswerInputValue = ref('');
+const preparingnextQuestionForAnswerId = ref(null);
+const editingnextQuestionId = ref<number | null>(null); // Track nested question being edited
+const editnextQuestionInputValue = ref(''); // Input for editing nested question
 
-// Adjust fetchQuestionsTree to correctly set showInput only for adding new questions
+/* // Adjust fetchQuestionsTree to correctly set showInput only for adding new questions
 const fetchQuestionsTree = async () => {
   try {
     const response = await fetch('/api/questions/tree');
@@ -224,9 +255,9 @@ const fetchQuestionsTree = async () => {
   } catch (error) {
     console.error('Error fetching questions tree:', error);
   }
-};
+}; */
 
-onMounted(fetchQuestionsTree);
+/* onMounted(fetchQuestionsTree); */
 
 // Recursive component for rendering questions and their children
 const QuestionsTree = defineComponent({
@@ -373,6 +404,34 @@ const saveEditAnswer = async () => {
 const cancelEditAnswer = () => {
   editingAnswerId.value = null;
   editAnswerInputValue.value = '';
+};
+
+const prepareAddnextQuestion = (answerId) => {
+  preparingnextQuestionForAnswerId.value = answerId;
+  // Additional logic to show input for adding a nested question
+};
+
+// Function to prepare editing a nested question
+const prepareEditnextQuestion = (nextQuestion) => {
+  editingnextQuestionId.value = nextQuestion.id;
+  editnextQuestionInputValue.value = nextQuestion.content;
+};
+
+// Function to save edited nested question
+const saveEditnextQuestion = async () => {
+  if (editingnextQuestionId.value === null) return;
+  // Add logic to submit edit to backend
+  console.log('Saving edited nested question', editingnextQuestionId.value, editnextQuestionInputValue.value);
+  editingnextQuestionId.value = null; // Reset editing state
+  editnextQuestionInputValue.value = ''; // Clear edit input
+  // Mock refreshing the questions tree
+  await fetchQuestionsTree();
+};
+
+// Function to cancel editing a nested question
+const cancelEditnextQuestion = () => {
+  editingnextQuestionId.value = null;
+  editnextQuestionInputValue.value = '';
 };
 
 const startEdit = (question: Question) => {

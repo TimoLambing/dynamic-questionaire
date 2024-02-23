@@ -1,5 +1,3 @@
-// /server/api/questions/tree.ts
-
 import { defineEventHandler } from 'h3';
 import { PrismaClient } from '@prisma/client';
 
